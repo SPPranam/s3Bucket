@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Details</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to right, #4facfe, #00f2fe);
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        label {
+            margin-top: 10px;
+            font-weight: bold;
+            width: 100%;
+            text-align: left;
+        }
+        input[type="text"], input[type="email"] {
+            width: 100%;
+            max-width: 300px;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 300px;
+            margin-top: 20px;
+        }
+        input[type="submit"], button {
+            background: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            width: 48%;
+        }
+        input[type="submit"]:hover, button:hover {
+            background: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Employee Details</h1>
+        <form id="employeeForm">
+            <label for="employeeName">Name:</label>
+            <input type="text" id="employeeName" name="employeeName" required>
+            
+            <label for="employeeId">ID:</label>
+            <input type="text" id="employeeId" name="employeeId" required>
+            
+            <label for="department">Department:</label>
+            <input type="text" id="department" name="department" required>
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required>
+            
+            <div class="button-container">
+                <input type="submit" value="Submit">
+                <button type="button" onclick="clearForm()">Clear</button>
+            </div>
+        </form>
+        <div id="result"></div>
+    </div>
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1.24.min.js"></script>
+    <script>
+        AWS.config.update({
+            accessKeyId: 'awsaccesskey',  
+            secretAccessKey: 'awssecretkey',  
+            region: 'ap-southeast-2' 
+        });
+
+        var s3 = new AWS.S3({ apiVersion: '2006-03-01' });
+
+        document.getElementById('employeeForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            var employeeData = {
+                Name: document.getElementById('employeeName').value,
+                ID: document.getElementById('employeeId').value,
+                Department: document.getElementById('department').value,
+                Email: document.getElementById('email').value
+            };
+
+            var params = {
+                Bucket: 'classmate1',
+                Key: 'employee_data/' + Date.now() + '.json',
+                Body: JSON.stringify(employeeData),
+                ContentType: 'application/json'
+            };
+
+            s3.putObject(params, function(err, data) {
+                if (err) {
+                    console.log(err, err.stack);
+                    document.getElementById('result').innerHTML = '<p style="color: red;">Error uploading data: ' + err.message + '</p>';
+                } else {
+                    var url = s3.getSignedUrl('getObject', {
+                        Bucket: params.Bucket,
+                        Key: params.Key,
+                        Expires: 60
+                    });
+                    document.getElementById('result').innerHTML = '<p>Successfully uploaded data. <a href="' + url + '" target="_blank">Access the data here</a>.</p>';
+                }
+            });
+        });
+
+        function clearForm() {
+            document.getElementById('employeeForm').reset();
+        }
+    </script>
+</body>
+</html>
